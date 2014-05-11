@@ -24,7 +24,9 @@ import org.apache.mahout.cf.taste.similarity.UserSimilarity;
 import org.joda.time.Period;
 import org.joda.time.format.PeriodFormat;
 
-
+/**
+ * This class only measures running time of recommendation algorithms
+ */
 public class Runner
 {
 
