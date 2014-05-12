@@ -1,14 +1,7 @@
 package performancetests;
 
-import static performancetests.DynamicRecommenderBuilder.RecommenderName.GenericUserBased;
-import static performancetests.DynamicRecommenderBuilder.RecommenderName.ItemAverage;
-import static performancetests.DynamicRecommenderBuilder.RecommenderName.ItemUserAverage;
-import static performancetests.DynamicRecommenderBuilder.RecommenderName.Random;
-import static performancetests.DynamicRecommenderBuilder.SimilarityMeasure.Euclidian;
-import static performancetests.DynamicRecommenderBuilder.SimilarityMeasure.EuclidianW;
-import static performancetests.DynamicRecommenderBuilder.SimilarityMeasure.Pearson;
-import static performancetests.DynamicRecommenderBuilder.SimilarityMeasure.PearsonW;
-import static performancetests.DynamicRecommenderBuilder.SimilarityMeasure.Spearman;
+import static performancetests.DynamicRecommenderBuilder.RecommenderName.*;
+import static performancetests.DynamicRecommenderBuilder.SimilarityMeasure.*;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -45,14 +38,20 @@ public class EvaluationRunner
 //    RecommenderBuilder[] recommenderBuilders = {new UserBasedPearson(), new ItemBasedTanimoto()};
     
     Object[][] recommenders = { 
-        { "Random", Random, Pearson }, 
-        { "ItemAverage", ItemAverage, Pearson }, 
-        { "ItemUserAverage", ItemUserAverage, Pearson }, 
-        { "Pearson", GenericUserBased, Pearson }, 
-        { "PearsonW", GenericUserBased, PearsonW }, 
-        { "Euclidian", GenericUserBased, Euclidian },
-        { "EuclidianW", GenericUserBased, EuclidianW },
-        { "Spearman", GenericUserBased, Spearman }
+        { "Random", Random, None }, 
+        { "ItemAverage", ItemAverage, None }, 
+        { "ItemUserAverage", ItemUserAverage, None }, 
+        { "UB Pearson", GenericUserBased, Pearson }, 
+        { "UB PearsonW", GenericUserBased, PearsonW }, 
+        { "UB Euclidian", GenericUserBased, Euclidian },
+        { "UB EuclidianW", GenericUserBased, EuclidianW },
+        { "UB Spearman", GenericUserBased, Spearman },
+        { "IB Pearson", GenericItemBased, Pearson },
+        { "IB PearsonW", GenericItemBased, PearsonW },
+        { "IB Euclidian", GenericItemBased, Euclidian },
+        { "IB EuclidianW", GenericItemBased, EuclidianW },
+        { "IB Tanimoto", GenericItemBased, Tanimoto },
+        { "IB LogLikelihood", GenericItemBased, LogLikelihood },
     };
     
     String today = DateFormat.getDateTimeInstance().format(new Date()).replace(':', '_');
