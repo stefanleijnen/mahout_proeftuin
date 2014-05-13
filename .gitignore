@@ -1,7 +1,7 @@
 
 ### Mahout-proeftuin ###
 
-results/
+results/*
 logs/
 
 # is 123 mb, > github limit.
