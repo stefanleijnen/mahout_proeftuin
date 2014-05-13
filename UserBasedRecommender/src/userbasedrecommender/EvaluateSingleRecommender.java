@@ -58,6 +58,8 @@ public class EvaluateSingleRecommender
     IRStatistics stats = statsEvaluator.evaluate(builder, null, model, null, 10,
         GenericRecommenderIRStatsEvaluator.CHOOSE_THRESHOLD, 1.0);
     
+    //Precision: % of recommended items that is recommendable  
+    //Recall: % of recommendable items that is recommended
     System.out.println("precision: " + stats.getPrecision());
     System.out.println("recall: " + stats.getRecall());
     finish = System.nanoTime();

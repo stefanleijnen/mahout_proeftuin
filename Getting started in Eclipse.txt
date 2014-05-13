@@ -3,7 +3,7 @@
 * Download and unpack Eclipse 64-bit
 * Download Mahout 0.9 and unpack it to a location of your choice
 * Download the latest Joda-Time and unpack it to a location of your choice
-* Start Eclipse in workspace "mahout_proeftuin"
+* Start Eclipse in workspace "mahout_proeftuin" (“Switch to workspace”)
 * Make a User Library with the mahout jars. Name it "Mahout". Add at least the following jars:
 	* mahout-core-0.9-job.jar
 	* the lib/slf4j jars
@@ -12,3 +12,5 @@
 * Import all projects the root folder
 * The projects use the workspace default JRE. This should work without changes.
 * Under Run Configurations, there should be a number of run configurations for the projects
+* Extra: import style formatter in Eclipse
+
