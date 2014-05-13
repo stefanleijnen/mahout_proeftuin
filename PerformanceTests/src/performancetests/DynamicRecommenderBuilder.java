@@ -9,6 +9,8 @@ import org.apache.mahout.cf.taste.impl.recommender.GenericUserBasedRecommender;
 import org.apache.mahout.cf.taste.impl.recommender.ItemAverageRecommender;
 import org.apache.mahout.cf.taste.impl.recommender.ItemUserAverageRecommender;
 import org.apache.mahout.cf.taste.impl.recommender.RandomRecommender;
+import org.apache.mahout.cf.taste.impl.recommender.svd.ALSWRFactorizer;
+import org.apache.mahout.cf.taste.impl.recommender.svd.SVDRecommender;
 import org.apache.mahout.cf.taste.impl.similarity.EuclideanDistanceSimilarity;
 import org.apache.mahout.cf.taste.impl.similarity.LogLikelihoodSimilarity;
 import org.apache.mahout.cf.taste.impl.similarity.PearsonCorrelationSimilarity;
@@ -24,7 +26,8 @@ import org.apache.mahout.cf.taste.similarity.UserSimilarity;
 public class DynamicRecommenderBuilder implements RecommenderBuilder
 {
   enum Type { UserBased, ItemBased }
-  enum RecommenderName { Random, ItemAverage, ItemUserAverage, GenericUserBased, GenericItemBased }
+  enum RecommenderName { Random, ItemAverage, ItemUserAverage, GenericUserBased, GenericItemBased,
+    SVG }
   enum SimilarityMeasure { None, Pearson, PearsonW, Euclidian, EuclidianW, Spearman, Tanimoto,
     LogLikelihood }
 
@@ -89,6 +92,9 @@ public class DynamicRecommenderBuilder implements RecommenderBuilder
         break;
       case GenericItemBased:
         recommender = new GenericItemBasedRecommender(dataModel, (ItemSimilarity) similarity);
+        break;
+      case SVG:
+        recommender = new SVDRecommender(dataModel, new ALSWRFactorizer(dataModel, 10, 0.05, 10));
         break;
       default: 
         throw new RuntimeException("No recommender measure set.");
