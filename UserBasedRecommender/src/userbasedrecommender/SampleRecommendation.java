@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.apache.mahout.cf.taste.common.TasteException;
 import org.apache.mahout.cf.taste.impl.model.file.FileDataModel;
-import org.apache.mahout.cf.taste.impl.neighborhood.ThresholdUserNeighborhood;
+import org.apache.mahout.cf.taste.impl.neighborhood.NearestNUserNeighborhood;
 import org.apache.mahout.cf.taste.impl.recommender.GenericUserBasedRecommender;
 import org.apache.mahout.cf.taste.impl.similarity.PearsonCorrelationSimilarity;
 import org.apache.mahout.cf.taste.model.DataModel;
@@ -22,7 +22,10 @@ public class SampleRecommendation
   {
     DataModel model = new FileDataModel(new File("data/dataset32.csv"));
     UserSimilarity similarity = new PearsonCorrelationSimilarity(model);
-    UserNeighborhood neighborhood = new ThresholdUserNeighborhood(0.1, similarity, model);
+//    UserNeighborhood neighborhood = new ThresholdUserNeighborhood(0.1, similarity, model);
+    UserNeighborhood neighborhood = new NearestNUserNeighborhood(1, similarity, model);
+    long[] unn = neighborhood.getUserNeighborhood(1);
+    System.out.println(unn);
     UserBasedRecommender recommender =
         new GenericUserBasedRecommender(model, neighborhood, similarity);
 

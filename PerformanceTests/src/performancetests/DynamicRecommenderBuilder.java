@@ -3,54 +3,51 @@ package performancetests;
 import org.apache.mahout.cf.taste.common.TasteException;
 import org.apache.mahout.cf.taste.common.Weighting;
 import org.apache.mahout.cf.taste.eval.RecommenderBuilder;
+import org.apache.mahout.cf.taste.impl.neighborhood.NearestNUserNeighborhood;
 import org.apache.mahout.cf.taste.impl.neighborhood.ThresholdUserNeighborhood;
-import org.apache.mahout.cf.taste.impl.recommender.ClusterSimilarity;
-import org.apache.mahout.cf.taste.impl.recommender.FarthestNeighborClusterSimilarity;
-import org.apache.mahout.cf.taste.impl.recommender.GenericItemBasedRecommender;
-import org.apache.mahout.cf.taste.impl.recommender.GenericUserBasedRecommender;
-import org.apache.mahout.cf.taste.impl.recommender.ItemAverageRecommender;
-import org.apache.mahout.cf.taste.impl.recommender.ItemUserAverageRecommender;
-import org.apache.mahout.cf.taste.impl.recommender.RandomRecommender;
-import org.apache.mahout.cf.taste.impl.recommender.TreeClusteringRecommender;
+import org.apache.mahout.cf.taste.impl.recommender.*;
 import org.apache.mahout.cf.taste.impl.recommender.knn.KnnItemBasedRecommender;
 import org.apache.mahout.cf.taste.impl.recommender.knn.NonNegativeQuadraticOptimizer;
 import org.apache.mahout.cf.taste.impl.recommender.knn.Optimizer;
+import org.apache.mahout.cf.taste.impl.recommender.slopeone.MemoryDiffStorage;
 import org.apache.mahout.cf.taste.impl.recommender.slopeone.SlopeOneRecommender;
 import org.apache.mahout.cf.taste.impl.recommender.svd.ALSWRFactorizer;
 import org.apache.mahout.cf.taste.impl.recommender.svd.SVDRecommender;
-import org.apache.mahout.cf.taste.impl.similarity.CachingItemSimilarity;
-import org.apache.mahout.cf.taste.impl.similarity.CachingUserSimilarity;
-import org.apache.mahout.cf.taste.impl.similarity.EuclideanDistanceSimilarity;
-import org.apache.mahout.cf.taste.impl.similarity.LogLikelihoodSimilarity;
-import org.apache.mahout.cf.taste.impl.similarity.PearsonCorrelationSimilarity;
-import org.apache.mahout.cf.taste.impl.similarity.SpearmanCorrelationSimilarity;
-import org.apache.mahout.cf.taste.impl.similarity.TanimotoCoefficientSimilarity;
+import org.apache.mahout.cf.taste.impl.similarity.*;
 import org.apache.mahout.cf.taste.model.DataModel;
 import org.apache.mahout.cf.taste.neighborhood.UserNeighborhood;
 import org.apache.mahout.cf.taste.recommender.Recommender;
+import org.apache.mahout.cf.taste.recommender.slopeone.DiffStorage;
 import org.apache.mahout.cf.taste.similarity.ItemSimilarity;
 import org.apache.mahout.cf.taste.similarity.UserSimilarity;
+import org.mortbay.log.Log;
 
 
+@SuppressWarnings("deprecation")
 public class DynamicRecommenderBuilder implements RecommenderBuilder
 {
   enum RecommenderName { Random, ItemAverage, ItemUserAverage, GenericUserBased, GenericItemBased,
-    SlopeOne, SVG, KnnItemBased, TreeClustering }
+    SlopeOne, SlopeOneMem, SVG, KnnItemBased, TreeClustering }
   enum SimilarityMeasure { None, Pearson, PearsonW, Euclidian, EuclidianW, Spearman, Tanimoto,
     LogLikelihood }
 
   String name;
   RecommenderName recommenderName;
   SimilarityMeasure similarityMeasure;
+  double nearestN = -1; // if smaller than 1, used as threshold for ThresholdUserNeighborhood
   
   DynamicRecommenderBuilder(Object[] conf) 
   {
     name = (String) conf[0];
     recommenderName = (RecommenderName) conf[1];
     similarityMeasure = (SimilarityMeasure) conf[2];
+    if (conf.length > 3)
+      if (conf[3] instanceof Integer)
+        nearestN = ((Integer)conf[3]).doubleValue();
+      else
+        nearestN = (double) conf[3];
   }
 
-  @SuppressWarnings("deprecation")
   @Override
   public Recommender buildRecommender(DataModel dataModel) throws TasteException
   {
@@ -82,7 +79,19 @@ public class DynamicRecommenderBuilder implements RecommenderBuilder
         break;
       default:
         throw new RuntimeException("No similarity measure set.");
-    }    
+    }
+    
+    UserNeighborhood userNeighborhood = null;
+    if (nearestN != -1) {
+      if (nearestN < 1) {
+        Log.info("using ThresholdUserNeighborhood with threshold " + nearestN);
+        userNeighborhood = new ThresholdUserNeighborhood(nearestN, similarity, dataModel);
+      }
+      else {
+        Log.info("using NearestNUserNeighborhood with N " + nearestN);
+        userNeighborhood = new NearestNUserNeighborhood((int) nearestN, similarity, dataModel);
+      }
+    }
     
     Recommender recommender;
     switch (recommenderName) {
@@ -97,8 +106,9 @@ public class DynamicRecommenderBuilder implements RecommenderBuilder
         break;
       case GenericUserBased:
         similarity = new CachingUserSimilarity(similarity, dataModel);
-        UserNeighborhood neighborhood = new ThresholdUserNeighborhood(0.1, similarity, dataModel);
-        recommender = new GenericUserBasedRecommender(dataModel, neighborhood, similarity);
+        if (userNeighborhood == null)
+          throw new RuntimeException("UserNeighborhood should be defined with GenericUserBasedRecommender");
+        recommender = new GenericUserBasedRecommender(dataModel, userNeighborhood, similarity);
         break;
       case GenericItemBased:
         ItemSimilarity iSimilarity = new CachingItemSimilarity((ItemSimilarity) similarity, dataModel);
@@ -107,6 +117,11 @@ public class DynamicRecommenderBuilder implements RecommenderBuilder
 //    not in Mahout 0.9
       case SlopeOne:
         recommender = new SlopeOneRecommender(dataModel);
+        break;
+//    not in Mahout 0.9
+      case SlopeOneMem:
+        DiffStorage diffStorage = new MemoryDiffStorage(dataModel, Weighting.WEIGHTED, 10000000L);
+        recommender = new SlopeOneRecommender(dataModel, Weighting.WEIGHTED, Weighting.WEIGHTED, diffStorage);
         break;
       case SVG:
         recommender = new SVDRecommender(dataModel, new ALSWRFactorizer(dataModel, 10, 0.05, 10));
