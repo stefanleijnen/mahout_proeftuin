@@ -54,7 +54,10 @@ public class EvaluationRunner
         { "IB EuclidianW", GenericItemBased, EuclidianW },
         { "IB Tanimoto", GenericItemBased, Tanimoto },
         { "IB LogLikelihood", GenericItemBased, LogLikelihood },
+        { "SlopeOne", SlopeOne, None }, // not in Mahout 0.9
         { "SVG", SVG, None },
+        { "KnnItemBased", KnnItemBased, LogLikelihood }, // not in Mahout 0.9
+        { "TreeClustering", TreeClustering, LogLikelihood }, // not in Mahout 0.9
     };
     
     String today = DateFormat.getDateTimeInstance().format(new Date()).replace(':', '_');
