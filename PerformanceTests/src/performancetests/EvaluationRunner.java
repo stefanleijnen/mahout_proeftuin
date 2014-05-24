@@ -71,18 +71,25 @@ public class EvaluationRunner
         { "UB EuclidianW th.8", GenericUserBased, EuclidianW, .8 }, 
         { "UB EuclidianW th.9", GenericUserBased, EuclidianW, .9 }, 
         { "UB EuclidianW th.95", GenericUserBased, EuclidianW, .95 }, 
-        { "UB Spearman", GenericUserBased, Spearman, .1 },
+        { "UB Spearman th.5", GenericUserBased, Spearman, .5 },
+        { "UB Spearman th.7", GenericUserBased, Spearman, .7 },
+        { "UB Spearman th.9", GenericUserBased, Spearman, .9 },
         { "IB Pearson", GenericItemBased, Pearson },
         { "IB PearsonW", GenericItemBased, PearsonW },
         { "IB Euclidian", GenericItemBased, Euclidian },
         { "IB EuclidianW", GenericItemBased, EuclidianW },
         { "IB Tanimoto", GenericItemBased, Tanimoto },
         { "IB LogLikelihood", GenericItemBased, LogLikelihood },
+        { "BIB Pearson", BiasedItemBased, Pearson },
+        { "BIB Euclidian", BiasedItemBased, Euclidian },
         { "SlopeOne", SlopeOne, None }, // not in Mahout 0.9
         { "SlopeOneMem", SlopeOneMem, None }, // not in Mahout 0.9
-        { "SVG", SVG, None },
+        { "SVG", SVD, None },
         { "KnnItemBased", KnnItemBased, LogLikelihood }, // not in Mahout 0.9
-        { "TreeClustering", TreeClustering, LogLikelihood }, // not in Mahout 0.9
+//        { "TreeClustering", TreeClustering, LogLikelihood }, // not in Mahout 0.9
+        { "TreeClustering2", TreeClustering2, LogLikelihood }, // not in Mahout 0.9
+        { "BookCrossing", BookCrossing, Euclidian }, 
+        { "KddCupTrack1", KddCupTrack1, UncenteredCosine }, // not in Mahout 0.9
     };
     
     String today = DateFormat.getDateTimeInstance().format(new Date()).replace(':', '_');

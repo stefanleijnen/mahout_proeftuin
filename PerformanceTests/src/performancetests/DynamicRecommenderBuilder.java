@@ -20,16 +20,21 @@ import org.apache.mahout.cf.taste.recommender.Recommender;
 import org.apache.mahout.cf.taste.recommender.slopeone.DiffStorage;
 import org.apache.mahout.cf.taste.similarity.ItemSimilarity;
 import org.apache.mahout.cf.taste.similarity.UserSimilarity;
-import org.mortbay.log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @SuppressWarnings("deprecation")
 public class DynamicRecommenderBuilder implements RecommenderBuilder
 {
+  static Logger logger = LoggerFactory.getLogger(DynamicRecommenderBuilder.class);
+
   enum RecommenderName { Random, ItemAverage, ItemUserAverage, GenericUserBased, GenericItemBased,
-    SlopeOne, SlopeOneMem, SVG, KnnItemBased, TreeClustering }
-  enum SimilarityMeasure { None, Pearson, PearsonW, Euclidian, EuclidianW, Spearman, Tanimoto,
-    LogLikelihood }
+    BiasedItemBased, SlopeOne, SlopeOneMem, SVD, KnnItemBased, TreeClustering, TreeClustering2,
+    BookCrossing, KddCupTrack1 } // recommenders from Mahout examples. 
+  // Note that KddCupTrack2 is too complex to include here.
+  enum SimilarityMeasure { None, Pearson, PearsonW, UncenteredCosine, Euclidian, EuclidianW, 
+    Spearman, Tanimoto, LogLikelihood }
 
   String name;
   RecommenderName recommenderName;
@@ -62,6 +67,9 @@ public class DynamicRecommenderBuilder implements RecommenderBuilder
       case PearsonW:
         similarity = new PearsonCorrelationSimilarity(dataModel, Weighting.WEIGHTED);
         break;
+      case UncenteredCosine:
+        similarity = new UncenteredCosineSimilarity(dataModel);
+        break;
       case Euclidian:
         similarity = new EuclideanDistanceSimilarity(dataModel);
         break;
@@ -84,11 +92,11 @@ public class DynamicRecommenderBuilder implements RecommenderBuilder
     UserNeighborhood userNeighborhood = null;
     if (nearestN != -1) {
       if (nearestN < 1) {
-        Log.info("using ThresholdUserNeighborhood with threshold " + nearestN);
+        logger.info("using ThresholdUserNeighborhood with threshold " + nearestN);
         userNeighborhood = new ThresholdUserNeighborhood(nearestN, similarity, dataModel);
       }
       else {
-        Log.info("using NearestNUserNeighborhood with N " + nearestN);
+        logger.info("using NearestNUserNeighborhood with N " + nearestN);
         userNeighborhood = new NearestNUserNeighborhood((int) nearestN, similarity, dataModel);
       }
     }
@@ -107,12 +115,19 @@ public class DynamicRecommenderBuilder implements RecommenderBuilder
       case GenericUserBased:
         similarity = new CachingUserSimilarity(similarity, dataModel);
         if (userNeighborhood == null)
-          throw new RuntimeException("UserNeighborhood should be defined with GenericUserBasedRecommender");
+          throw new RuntimeException("UserNeighborhood should be defined with "
+              + "GenericUserBasedRecommender");
         recommender = new GenericUserBasedRecommender(dataModel, userNeighborhood, similarity);
         break;
       case GenericItemBased:
-        ItemSimilarity iSimilarity = new CachingItemSimilarity((ItemSimilarity) similarity, dataModel);
+        ItemSimilarity iSimilarity = new CachingItemSimilarity((ItemSimilarity) similarity, 
+            dataModel);
         recommender = new GenericItemBasedRecommender(dataModel, iSimilarity);
+        break;
+      case BiasedItemBased:
+        ItemSimilarity iSimilarity2 = new CachingItemSimilarity((ItemSimilarity) similarity, 
+          dataModel);
+        recommender = new BiasedItemBasedRecommender(dataModel, iSimilarity2);
         break;
 //    not in Mahout 0.9
       case SlopeOne:
@@ -121,20 +136,36 @@ public class DynamicRecommenderBuilder implements RecommenderBuilder
 //    not in Mahout 0.9
       case SlopeOneMem:
         DiffStorage diffStorage = new MemoryDiffStorage(dataModel, Weighting.WEIGHTED, 10000000L);
-        recommender = new SlopeOneRecommender(dataModel, Weighting.WEIGHTED, Weighting.WEIGHTED, diffStorage);
+        recommender = new SlopeOneRecommender(dataModel, Weighting.WEIGHTED, Weighting.WEIGHTED, 
+            diffStorage);
         break;
-      case SVG:
+      case SVD:
         recommender = new SVDRecommender(dataModel, new ALSWRFactorizer(dataModel, 10, 0.05, 10));
         break;
 //    not in Mahout 0.9
       case KnnItemBased:
         Optimizer optimizer = new NonNegativeQuadraticOptimizer();
-        recommender = new KnnItemBasedRecommender(dataModel, (ItemSimilarity) similarity, optimizer, 10);
+        recommender = new KnnItemBasedRecommender(dataModel, (ItemSimilarity) similarity, optimizer,
+            10);
         break;
 //    not in Mahout 0.9
       case TreeClustering:
         ClusterSimilarity clusterSimilarity = new FarthestNeighborClusterSimilarity(similarity);
         recommender = new TreeClusteringRecommender(dataModel, clusterSimilarity, 10);
+        break;
+//    not in Mahout 0.9
+      case TreeClustering2:
+        ClusterSimilarity clusterSimilarity2 = new FarthestNeighborClusterSimilarity(similarity);
+        recommender = new TreeClusteringRecommender2(dataModel, clusterSimilarity2, 10);
+        break;
+      case BookCrossing:
+        similarity = new CachingUserSimilarity(similarity, dataModel);
+        UserNeighborhood neighborhood = new NearestNUserNeighborhood(10, 0.2, similarity, dataModel,
+            0.2);
+        recommender = new GenericUserBasedRecommender(dataModel, neighborhood, similarity);
+        break;
+      case KddCupTrack1:
+        recommender = new GenericItemBasedRecommender(dataModel, (ItemSimilarity) similarity);
         break;
       default:
         throw new RuntimeException("No recommender measure set.");
