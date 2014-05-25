@@ -11,6 +11,7 @@ import org.apache.mahout.cf.taste.eval.RecommenderEvaluator;
 import org.apache.mahout.cf.taste.eval.RecommenderIRStatsEvaluator;
 import org.apache.mahout.cf.taste.impl.eval.AverageAbsoluteDifferenceRecommenderEvaluator;
 import org.apache.mahout.cf.taste.impl.eval.GenericRecommenderIRStatsEvaluator;
+import org.apache.mahout.cf.taste.impl.eval.RankBasedRecommenderEvaluator;
 import org.apache.mahout.cf.taste.impl.model.file.FileDataModel;
 import org.apache.mahout.cf.taste.impl.neighborhood.ThresholdUserNeighborhood;
 import org.apache.mahout.cf.taste.impl.recommender.GenericUserBasedRecommender;
@@ -43,10 +44,10 @@ public class EvaluateSingleRecommender
   {
     long start = System.nanoTime();
 
-    DataModel model = new FileDataModel(new File("data/ml-100k.csv"));
+    DataModel model = new FileDataModel(new File("data/ml-10k.csv"));
     RecommenderEvaluator evaluator = new AverageAbsoluteDifferenceRecommenderEvaluator();
     RecommenderBuilder builder = new MyRecommenderBuilder();
-    double result = evaluator.evaluate(builder, null, model, 0.9, 1.0);
+    double result = evaluator.evaluate(builder, null, model, 0.5, 1.0);
     
     System.out.println(result);
     long finish = System.nanoTime();
@@ -66,6 +67,12 @@ public class EvaluateSingleRecommender
     millis = (finish - start) / 1000000;
     period = new Period(millis).normalizedStandard();
     System.out.println("Duration: " + PeriodFormat.getDefault().print(period));
+    
+    // Rank-based evaluation
+    RankBasedRecommenderEvaluator rankBasedEvaluator = new RankBasedRecommenderEvaluator();
+    result = rankBasedEvaluator.evaluate(builder, null, model, 0.5, 1.0);
+    System.out.println("rank-based result: " + result);
+
   }
 
   class MyRecommenderBuilder implements RecommenderBuilder

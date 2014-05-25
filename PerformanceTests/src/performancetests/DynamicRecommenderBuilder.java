@@ -3,6 +3,7 @@ package performancetests;
 import org.apache.mahout.cf.taste.common.TasteException;
 import org.apache.mahout.cf.taste.common.Weighting;
 import org.apache.mahout.cf.taste.eval.RecommenderBuilder;
+import org.apache.mahout.cf.taste.example.kddcup.track1.svd.ParallelArraysSGDFactorizer;
 import org.apache.mahout.cf.taste.impl.neighborhood.NearestNUserNeighborhood;
 import org.apache.mahout.cf.taste.impl.neighborhood.ThresholdUserNeighborhood;
 import org.apache.mahout.cf.taste.impl.recommender.*;
@@ -11,8 +12,7 @@ import org.apache.mahout.cf.taste.impl.recommender.knn.NonNegativeQuadraticOptim
 import org.apache.mahout.cf.taste.impl.recommender.knn.Optimizer;
 import org.apache.mahout.cf.taste.impl.recommender.slopeone.MemoryDiffStorage;
 import org.apache.mahout.cf.taste.impl.recommender.slopeone.SlopeOneRecommender;
-import org.apache.mahout.cf.taste.impl.recommender.svd.ALSWRFactorizer;
-import org.apache.mahout.cf.taste.impl.recommender.svd.SVDRecommender;
+import org.apache.mahout.cf.taste.impl.recommender.svd.*;
 import org.apache.mahout.cf.taste.impl.similarity.*;
 import org.apache.mahout.cf.taste.model.DataModel;
 import org.apache.mahout.cf.taste.neighborhood.UserNeighborhood;
@@ -30,7 +30,9 @@ public class DynamicRecommenderBuilder implements RecommenderBuilder
   static Logger logger = LoggerFactory.getLogger(DynamicRecommenderBuilder.class);
 
   enum RecommenderName { Random, ItemAverage, ItemUserAverage, GenericUserBased, GenericItemBased,
-    BiasedItemBased, SlopeOne, SlopeOneMem, SVD, KnnItemBased, TreeClustering, TreeClustering2,
+    BiasedItemBased, SlopeOne, SlopeOneMem, 
+    SVD_ALS, SVD_FUNK, SVD_ILR, SVD_PSGD, SVD_RSGD, SVD_PlusPlus,  
+    KnnItemBased, TreeClustering, TreeClustering2,
     BookCrossing, KddCupTrack1 } // recommenders from Mahout examples. 
   // Note that KddCupTrack2 is too complex to include here.
   enum SimilarityMeasure { None, Pearson, PearsonW, UncenteredCosine, Euclidian, EuclidianW, 
@@ -115,7 +117,7 @@ public class DynamicRecommenderBuilder implements RecommenderBuilder
       case GenericUserBased:
         similarity = new CachingUserSimilarity(similarity, dataModel);
         if (userNeighborhood == null)
-          throw new RuntimeException("UserNeighborhood should be defined with "
+          throw new RuntimeException("UserNeighborhood should be defined when using "
               + "GenericUserBasedRecommender");
         recommender = new GenericUserBasedRecommender(dataModel, userNeighborhood, similarity);
         break;
@@ -129,32 +131,44 @@ public class DynamicRecommenderBuilder implements RecommenderBuilder
           dataModel);
         recommender = new BiasedItemBasedRecommender(dataModel, iSimilarity2);
         break;
-//    not in Mahout 0.9
-      case SlopeOne:
+      case SlopeOne: // not in Mahout 0.9
         recommender = new SlopeOneRecommender(dataModel);
         break;
-//    not in Mahout 0.9
-      case SlopeOneMem:
+      case SlopeOneMem: // not in Mahout 0.9
         DiffStorage diffStorage = new MemoryDiffStorage(dataModel, Weighting.WEIGHTED, 10000000L);
         recommender = new SlopeOneRecommender(dataModel, Weighting.WEIGHTED, Weighting.WEIGHTED, 
             diffStorage);
         break;
-      case SVD:
+      case SVD_ALS:
         recommender = new SVDRecommender(dataModel, new ALSWRFactorizer(dataModel, 10, 0.05, 10));
         break;
-//    not in Mahout 0.9
-      case KnnItemBased:
+      case SVD_FUNK: // not in Mahout 0.9
+        recommender = new SVDRecommender(dataModel, new FunkSVDFactorizer(dataModel, 10, 10));
+        break;
+      case SVD_ILR: // not in Mahout 0.9
+        recommender = new SVDRecommender(dataModel, new ImplicitLinearRegressionFactorizer(
+          dataModel, 10, 10, 0.1));
+        break;
+      case SVD_PlusPlus: // not in Mahout 0.9
+        recommender = new SVDRecommender(dataModel, new SVDPlusPlusFactorizer(dataModel, 10, 10));
+        break;
+      case SVD_PSGD: // not in Mahout 0.9
+        recommender = new SVDRecommender(dataModel, new ParallelArraysSGDFactorizer(
+          dataModel, 10, 10));
+        break;
+      case SVD_RSGD: // not in Mahout 0.9
+        recommender = new SVDRecommender(dataModel, new RatingSGDFactorizer(dataModel, 10, 10));
+        break;
+      case KnnItemBased: // not in Mahout 0.9
         Optimizer optimizer = new NonNegativeQuadraticOptimizer();
         recommender = new KnnItemBasedRecommender(dataModel, (ItemSimilarity) similarity, optimizer,
             10);
         break;
-//    not in Mahout 0.9
-      case TreeClustering:
+      case TreeClustering: // not in Mahout 0.9
         ClusterSimilarity clusterSimilarity = new FarthestNeighborClusterSimilarity(similarity);
         recommender = new TreeClusteringRecommender(dataModel, clusterSimilarity, 10);
         break;
-//    not in Mahout 0.9
-      case TreeClustering2:
+      case TreeClustering2: // not in Mahout 0.9
         ClusterSimilarity clusterSimilarity2 = new FarthestNeighborClusterSimilarity(similarity);
         recommender = new TreeClusteringRecommender2(dataModel, clusterSimilarity2, 10);
         break;

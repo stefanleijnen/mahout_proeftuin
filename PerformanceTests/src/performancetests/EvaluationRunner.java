@@ -16,10 +16,7 @@ import org.apache.mahout.cf.taste.eval.RecommenderEvaluator;
 import org.apache.mahout.cf.taste.eval.RecommenderIRStatsEvaluator;
 import org.apache.mahout.cf.taste.impl.common.LongPrimitiveIterator;
 import org.apache.mahout.cf.taste.impl.common.RunningAverage;
-import org.apache.mahout.cf.taste.impl.eval.AverageAbsoluteDifferenceRecommenderEvaluator;
-import org.apache.mahout.cf.taste.impl.eval.GenericRecommenderIRStatsEvaluator;
-import org.apache.mahout.cf.taste.impl.eval.LoadEvaluator;
-import org.apache.mahout.cf.taste.impl.eval.LoadStatistics;
+import org.apache.mahout.cf.taste.impl.eval.*;
 import org.apache.mahout.cf.taste.impl.model.file.FileDataModel;
 import org.apache.mahout.cf.taste.model.DataModel;
 import org.apache.mahout.cf.taste.recommender.Recommender;
@@ -84,9 +81,14 @@ public class EvaluationRunner
         { "BIB Euclidian", BiasedItemBased, Euclidian },
         { "SlopeOne", SlopeOne, None }, // not in Mahout 0.9
         { "SlopeOneMem", SlopeOneMem, None }, // not in Mahout 0.9
-        { "SVG", SVD, None },
+        { "SVG_ALS", SVD_ALS, None },
+        { "SVD_FUNK", SVD_FUNK, None }, // not in Mahout 0.9
+//        { "SVD_ILR", SVD_ILR, None }, // not in Mahout 0.9 // runs forever and then crashes
+        { "SVD_PlusPlus", SVD_PlusPlus, None }, // not in Mahout 0.9
+        { "SVD_PSGD", SVD_PSGD, None }, // not in Mahout 0.9
+        { "SVD_RSGD", SVD_RSGD, None }, // not in Mahout 0.9
         { "KnnItemBased", KnnItemBased, LogLikelihood }, // not in Mahout 0.9
-//        { "TreeClustering", TreeClustering, LogLikelihood }, // not in Mahout 0.9
+//        { "TreeClustering", TreeClustering, LogLikelihood }, // not in Mahout 0.9 // takes very long
         { "TreeClustering2", TreeClustering2, LogLikelihood }, // not in Mahout 0.9
         { "BookCrossing", BookCrossing, Euclidian }, 
         { "KddCupTrack1", KddCupTrack1, UncenteredCosine }, // not in Mahout 0.9
@@ -105,7 +107,7 @@ public class EvaluationRunner
 
     writer.println("data set,algorithm,run,mem,1st rec (s),mem,2nd rec (s),mem,"
         + "avg time,ct,"
-        + "av abs dif,dur (s),prec,recall,fallout,F1 msr,nDCG,dur (s)");
+        + "av abs dif,dur (s),rank score, dur (s),prec,recall,fallout,F1 msr,nDCG,dur (s)");
 
     for (int i=0; i<dataSets.length; i++) 
     {
@@ -136,9 +138,9 @@ public class EvaluationRunner
           writer.printf(j + ",");
           writer.printf(getUsedMemory() + ",");
           System.out.println("run " + j);
-          long start = System.nanoTime();
 
           // do single recommendation and measure time and memory
+          long start = System.nanoTime();
           Recommender recommender = recommenderBuilder.buildRecommender(dataModel);
           LongPrimitiveIterator userIDs = dataModel.getUserIDs();
           Long user1 = userIDs.next();
@@ -153,6 +155,7 @@ public class EvaluationRunner
           
           // do another recommendation and measure time and memory
           Long user2 = userIDs.next();
+          start = System.nanoTime();
           recommender.recommend(user2, 5);
 
           split = System.nanoTime();
@@ -170,8 +173,9 @@ public class EvaluationRunner
           writer.printf("%.2f,", timing.getAverage());
           writer.printf("%d,", timing.getCount());
 
-          // evaluate recommender
+          // evaluate recommender: Av abs diff
           RecommenderEvaluator evaluator = new AverageAbsoluteDifferenceRecommenderEvaluator();
+          start = System.nanoTime();
           double avAbsDif = evaluator.evaluate(recommenderBuilder, null, dataModel, 0.9, 1.0);
           
           split = System.nanoTime();
@@ -182,8 +186,22 @@ public class EvaluationRunner
           System.out.println("AvAbsDiff: " + avAbsDif);
           System.out.println("Duration: " + PeriodFormat.getDefault().print(period));
 
+          // evaluate recommender: rank-based
+          RecommenderEvaluator rankBasedEvaluator = new RankBasedRecommenderEvaluator();
+          start = System.nanoTime();
+          double rankScore = rankBasedEvaluator.evaluate(recommenderBuilder, null, dataModel, 0.9, 1.0);
+          
+          split = System.nanoTime();
+          millis = (split - start) / 1000000;
+          period = new Period(millis).normalizedStandard();
+          writer.printf("%.2f,", rankScore);
+          writer.printf("%f,", millis/1000.0);
+          System.out.println("rankScore: " + rankScore);
+          System.out.println("Duration: " + PeriodFormat.getDefault().print(period));
+          
           // calculate IR statistics
           RecommenderIRStatsEvaluator statsEvaluator = new GenericRecommenderIRStatsEvaluator();
+          start = System.nanoTime();
           IRStatistics stats = statsEvaluator.evaluate(recommenderBuilder, null, dataModel, null, 
               10, GenericRecommenderIRStatsEvaluator.CHOOSE_THRESHOLD, 1.0);
           
@@ -202,7 +220,16 @@ public class EvaluationRunner
           System.out.println("F1 measure: " + stats.getF1Measure());
           System.out.println("nDCG: " + stats.getNormalizedDiscountedCumulativeGain());
           System.out.println("Duration: " + PeriodFormat.getDefault().print(period));
-
+          
+          // Order-based evaluator - this is actually not usefull since it is intended to compare
+          // two recommenders
+//          RunningAverage tracker = new FullRunningAverage();
+//          start = System.nanoTime();
+//          OrderBasedRecommenderEvaluator.evaluate(recommender, dataModel, 10, tracker, "tag");
+//          split = System.nanoTime();
+//          System.out.println("OB av: " + tracker.getAverage());
+//          System.out.println("OB ct: " + tracker.getCount());
+          
           writer.println();
         }
       }
