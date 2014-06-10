@@ -1,11 +1,18 @@
 
 * Make sure you have a 64bit JRE
 * Download and unpack Eclipse 64-bit
+* Download Mahout 0.8 and unpack it to a location of your choice
+	* Tip: download the sources as well
 * Download Mahout 0.9 and unpack it to a location of your choice
 	* Tip: download the sources as well
 * Download the latest Joda-Time and unpack it to a location of your choice
 * Start Eclipse in workspace “.../mahout_proeftuin" (“Switch to workspace”)
-* Make a User Library with the mahout jars. Name it "Mahout". Add at least the following jars:
+* Make a User Library with the mahout jars. Name it "Mahout 0.8". Add at least the following jars:
+	* mahout-core-0.8-job.jar
+	* mahout-examples-0.8-job.jar
+	* the log4j-1.2.17.jar from Mahout 0.9 (!!!) (prevents log flood on console)
+	* Tip: add the Mahout sources as source
+* Make a User Library with the mahout jars. Name it "Mahout 0.9". Add at least the following jars:
 	* mahout-core-0.9-job.jar
 	* the lib/slf4j jars
 	* the lib/log4j jars

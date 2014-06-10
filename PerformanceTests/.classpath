@@ -5,5 +5,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/Mahout 0.8"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/MahoutExtension"/>
+	<classpathentry kind="lib" path="C:/java-lib/mahout-distribution-0.8/mahout-distribution-0.8/mahout-examples-0.8.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
